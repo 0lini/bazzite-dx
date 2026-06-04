@@ -1,6 +1,14 @@
 #!/usr/bin/bash
 set -xeuo pipefail
 
+if [[ "$IMAGE_NAME" == *deck* ]]; then
+    mkdir -p /usr/share/gamescope-session-plus/
+    curl -Lo /usr/share/gamescope-session-plus/bootstrap_steam.tar.gz https://large-package-sources.nobaraproject.org/bootstrap_steam.tar.gz
+    dnf5 install -y \
+        gamescope-session-plus \
+        gamescope-session-steam
+fi
+
 dnf5 install -y \
     android-tools \
     bcc \
@@ -42,13 +50,15 @@ sed -i 's@^NoDisplay=true@NoDisplay=false@' /usr/share/applications/input-remapp
 systemctl enable input-remapper.service
 systemctl enable uupd.timer
 
-# Remove -deck specific changes to allow for login screens and session selection in settings
-rm -f /etc/sddm.conf.d/steamos.conf
-rm -f /etc/sddm.conf.d/virtualkbd.conf
-rm -f /etc/sddm.conf.d/zz-steamos-autologin.conf
-rm -f /usr/share/gamescope-session-plus/bootstrap_steam.tar.gz
-systemctl disable bazzite-autologin.service
-dnf5 remove -y steamos-manager
+if [[ "$IMAGE_NAME" == *deck* ]]; then
+    # Remove -deck specific changes to allow for login screens and session selection in settings
+    rm -f /etc/sddm.conf.d/steamos.conf
+    rm -f /etc/sddm.conf.d/virtualkbd.conf
+    rm -f /etc/sddm.conf.d/zz-steamos-autologin.conf
+    rm -f /usr/share/gamescope-session-plus/bootstrap_steam.tar.gz
+    systemctl disable bazzite-autologin.service
+    dnf5 remove -y steamos-manager
+fi
 
 if [[ "$IMAGE_NAME" == *gnome* ]]; then
     # Remove SDDM and re-enable GDM on GNOME builds.
