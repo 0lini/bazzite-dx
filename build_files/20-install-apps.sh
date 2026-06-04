@@ -1,13 +1,11 @@
 #!/usr/bin/bash
 set -xeuo pipefail
 
-if [[ "$IMAGE_NAME" == *deck* ]]; then
-    mkdir -p /usr/share/gamescope-session-plus/
-    curl -Lo /usr/share/gamescope-session-plus/bootstrap_steam.tar.gz https://large-package-sources.nobaraproject.org/bootstrap_steam.tar.gz
-    dnf5 install --enable-repo="copr:copr.fedorainfracloud.org:bazzite-org:bazzite" -y \
-        gamescope-session-plus \
-        gamescope-session-steam
-fi
+mkdir -p /usr/share/gamescope-session-plus/
+curl -Lo /usr/share/gamescope-session-plus/bootstrap_steam.tar.gz https://large-package-sources.nobaraproject.org/bootstrap_steam.tar.gz
+dnf5 install --enable-repo="copr:copr.fedorainfracloud.org:bazzite-org:bazzite" -y \
+    gamescope-session-plus \
+    gamescope-session-steam
 
 dnf5 install -y \
     android-tools \
