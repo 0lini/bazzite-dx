@@ -6,9 +6,6 @@ on:
       - stable
       - testing
   pull_request:
-    branches:
-      - stable
-      - testing
   merge_group:
   workflow_dispatch:
   repository_dispatch:
@@ -89,6 +86,23 @@ jobs:
           echo "date=$(date -u +%Y\-%m\-%d\T%H\:%M\:%S\Z)" >> $GITHUB_OUTPUT
           echo "date_short=$(date -u +%Y%m%d)" >> $GITHUB_OUTPUT
 
+      # Resolve which stream to build.
+      # base_ref holds the target branch name for pull_request and merge_group events;
+      # ref_name holds the branch/tag for push, workflow_dispatch, and repository_dispatch.
+      # Using base_ref || ref_name handles merge_group correctly (ref_name for merge_group
+      # is "gh-readonly-queue/<target>/pr-N-sha", not the branch name).
+      - name: Detect stream
+        id: stream
+        run: |
+          TARGET="${{ github.base_ref || github.ref_name }}"
+          if [[ "$TARGET" == "testing" ]]; then
+            echo "name=testing" >> $GITHUB_OUTPUT
+            echo "source_tag=testing" >> $GITHUB_OUTPUT
+          else
+            echo "name=stable" >> $GITHUB_OUTPUT
+            echo "source_tag=stable" >> $GITHUB_OUTPUT
+          fi
+
       # OUTPUTS:
       #   - SOURCE_VERSION: version of the source image. Ex.: testing-41.20250312
       #   - SOURCE_VERSION_MAJOR: major version. Used to identify big releases. Ex.: 41
@@ -96,9 +110,7 @@ jobs:
         id: fetch_source_meta
         env:
           org: ${{ env.SOURCE_ORG }}
-          # On the stable branch pull from bazzite:stable; on testing from bazzite:testing.
-          # PRs and repository_dispatch default to stable.
-          IMAGE_SOURCE_TAG: ${{ github.ref_name == 'testing' && 'testing' || 'stable' }}
+          IMAGE_SOURCE_TAG: ${{ steps.stream.outputs.source_tag }}
         run: |
           set -x
           # SOURCE_VERSION_MAJOR must be a number
@@ -117,7 +129,6 @@ jobs:
             exit 1
           fi
           echo "SOURCE_VERSION=$SOURCE_VERSION" >>$GITHUB_OUTPUT
-          echo "IMAGE_SOURCE_TAG=$IMAGE_SOURCE_TAG" >>$GITHUB_OUTPUT
 
           SOURCE_VERSION_MAJOR=$([[ ${SOURCE_VERSION} =~ ^(.*-)?([[:digit:]]+) ]] && echo "${BASH_REMATCH[-1]}")
           _status=$?
@@ -140,14 +151,18 @@ jobs:
         env:
           VERSION_MAJOR: ${{ steps.fetch_source_meta.outputs.SOURCE_VERSION_MAJOR }}
           DATE_SHORT: ${{ steps.date.outputs.date_short }}
+          STREAM: ${{ steps.stream.outputs.name }}
         run: |
           # Mirror upstream bazzite tag generation logic.
           # stable branch: latest, stable, stable-VER, stable-VER.DATE
-          # testing branch: testing, testing-VER
-          # PRs: sha tag only
+          # testing branch: testing, testing-VER, testing-VER.DATE
+          # PRs: pr-N + sha-<short> for per-commit traceability
           if [[ -n "${{ github.event.pull_request.number }}" ]]; then
-            BUILD_TAGS=("pr-${{ github.event.pull_request.number }}")
-          elif [[ "${{ github.ref_name }}" == "testing" ]]; then
+            BUILD_TAGS=(
+              "pr-${{ github.event.pull_request.number }}"
+              "sha-$(git rev-parse --short HEAD)"
+            )
+          elif [[ "$STREAM" == "testing" ]]; then
             BUILD_TAGS=(
               "testing"
               "testing-${VERSION_MAJOR}"
@@ -162,7 +177,13 @@ jobs:
             )
           fi
 
-          echo "tags=${BUILD_TAGS[*]}" >> $GITHUB_OUTPUT
+          # Write one tag per line — docker/metadata-action parses tags input
+          # with a newline delimiter, not spaces.
+          {
+            echo "tags<<EOF"
+            printf '%s\n' "${BUILD_TAGS[@]}"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       # Image metadata for https://artifacthub.io/ - This is optional but is highly recommended so we all can get a index of all the custom images
       # The metadata by itself is not going to do anything, you choose if you want your image to be on ArtifactHub or not.
@@ -185,7 +206,7 @@ jobs:
             io.artifacthub.package.keywords=bootc,ublue,universal-blue
             io.artifacthub.package.license=Apache-2.0
             io.artifacthub.package.logo-url=${{ env.ARTIFACTHUB_LOGO_URL }}
-            io.artifacthub.package.prerelease=${{ github.ref_name == 'testing' }}
+            io.artifacthub.package.prerelease=${{ steps.stream.outputs.name == 'testing' }}
             containers.bootc=1
           sep-tags: " "
           sep-annotations: " "
@@ -203,7 +224,7 @@ jobs:
           labels: ${{ steps.metadata.outputs.labels }}
           oci: false
           build-args: |
-            BASE_IMAGE=ghcr.io/${{ env.SOURCE_ORG }}/${{ matrix.base_image }}:${{ steps.fetch_source_meta.outputs.IMAGE_SOURCE_TAG }}
+            BASE_IMAGE=ghcr.io/${{ env.SOURCE_ORG }}/${{ matrix.base_image }}:${{ steps.stream.outputs.source_tag }}
             IMAGE_NAME=${{ env.IMAGE_NAME }}
             IMAGE_VENDOR=${{ github.repository_owner }}
 
