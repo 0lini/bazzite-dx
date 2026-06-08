@@ -23,8 +23,7 @@ dnf5 install -y \
     zsh
 
 if [[ "$IMAGE_NAME" != *nvidia* ]]; then
-    dnf5 remove -y \
-        mesa-libOpenCL
+    dnf5 remove -y mesa-libOpenCL
     dnf5 --setopt=install_weak_deps=False install -y \
         rocm-hip \
         rocm-opencl \
