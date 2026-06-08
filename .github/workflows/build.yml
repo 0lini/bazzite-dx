@@ -13,14 +13,11 @@ env:
   IMAGE_REGISTRY: "ghcr.io/${{ github.repository_owner }}" # do not edit
   ARTIFACTHUB_LOGO_URL: "https://avatars.githubusercontent.com/u/187439889?s=200&v=4"
 
-  # The tag used in the image from which we base of.
-  # ex.: ghcr.io/org/image:IMAGE_SOURCE_TAG
-  IMAGE_SOURCE_TAG: "testing"
   SOURCE_ORG: "ublue-os"
   SOURCE_REPO: "bazzite"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}-${{ inputs.brand_name}}-${{ inputs.stream_name }}
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -32,13 +29,21 @@ jobs:
       fail-fast: false
       matrix:
         base_image:
+          - bazzite
+          - bazzite-gnome
+          - bazzite-gnome-nvidia-open
+          - bazzite-nvidia-open
           - bazzite-deck
           - bazzite-deck-gnome
           - bazzite-deck-nvidia-gnome
           - bazzite-deck-nvidia
+        source_tag:
+          - stable
+          - testing
 
     env:
       BASE_IMAGE: ${{ matrix.base_image }}
+      IMAGE_SOURCE_TAG: ${{ matrix.source_tag }}
 
     permissions:
       contents: read
@@ -195,7 +200,11 @@ jobs:
           # Common vars for generating tags
           VERSION_TAG="${{ steps.relabel.outputs.version }}"
 
-          BUILD_TAGS=("stable-${VERSION_TAG}" "latest" "stable" "stable-${{ steps.fetch_source_meta.outputs.SOURCE_VERSION_MAJOR }}")
+          if [[ "${{ matrix.source_tag }}" == "stable" ]]; then
+            BUILD_TAGS=("stable-${VERSION_TAG}" "latest" "stable" "stable-${{ steps.fetch_source_meta.outputs.SOURCE_VERSION_MAJOR }}")
+          else
+            BUILD_TAGS=("testing-${VERSION_TAG}" "testing" "testing-${{ steps.fetch_source_meta.outputs.SOURCE_VERSION_MAJOR }}")
+          fi
 
           echo "Generated the following build tags: "
           for TAG in "${BUILD_TAGS[@]}"; do
