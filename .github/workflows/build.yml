@@ -244,10 +244,10 @@ jobs:
       # to consume. For more details, review the image signing section of the README.
       - name: Install Cosign
         uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && secrets.SIGNING_SECRET != ''
 
       - name: Sign container image
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && secrets.SIGNING_SECRET != ''
         env:
           LOWERCASE_REGISTRY: ${{ steps.lowercase.outputs.registry }}
           LOWERCASE_IMAGE: ${{ steps.lowercase.outputs.image }}
