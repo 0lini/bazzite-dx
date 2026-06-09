@@ -27,6 +27,12 @@ install-fonts:
     echo "Installing extra fonts..."
     brew bundle --file=/usr/share/ublue-os/homebrew/bazzite-dx-fonts.Brewfile
 
+# Install bazzite-dx brew packages
+install-brew-packages:
+    #!/usr/bin/bash
+    echo "Installing bazzite-dx brew packages..."
+    brew bundle --file=/usr/share/ublue-os/homebrew/bazzite-dx.Brewfile --no-lock
+
 # Toggle default boot between Steam Game Mode (gamescope-session) and Desktop
 toggle-gamemode ACTION="":
     #!/usr/bin/bash
