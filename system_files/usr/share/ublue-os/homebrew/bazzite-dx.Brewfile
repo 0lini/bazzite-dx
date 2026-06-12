@@ -1,6 +1,6 @@
 brew "atuin"
 brew "bat"
-brew "delta"
+brew "git-delta"
 brew "direnv"
 brew "eza"
 brew "fd"
