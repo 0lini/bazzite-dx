@@ -42,6 +42,15 @@ Switching between desktop environments via rebase can break your installation an
 
 After running the rebase command, reboot your system to complete the installation. 
 
+## Developer tools via Homebrew
+
+Userspace developer tools are installed with [Homebrew](https://github.com/ublue-os/brew) instead of being baked into the image as RPMs:
+
+```bash
+ujust install-vscode     # Visual Studio Code + default remote/dev container extensions
+ujust install-dev-tools  # adb/fastboot, bpftop, ccache, podman-tui, ramalama, rclone, restic
+```
+
 ## Acknowledgments
 
 This project is built upon the work from [amyos](https://github.com/astrovm/amyos)

@@ -1,0 +1,7 @@
+cask "android-platform-tools"
+brew "bpftop"
+brew "ccache"
+brew "podman-tui"
+brew "ramalama"
+brew "rclone"
+brew "restic"

@@ -1,22 +1,20 @@
 #!/usr/bin/bash
 set -xeuo pipefail
 
+# Userspace CLI tools and VS Code are provided through Homebrew (shipped by the
+# ublue-os/brew image in the Bazzite base) instead of RPMs.
+# See /usr/share/ublue-os/homebrew/bazzite-dx-*.Brewfile and `ujust install-dev-tools`.
+# Only packages that need to be part of the OS (daemons, kernel tooling, login shells,
+# system libraries) should be installed here.
 dnf5 install -y \
-    android-tools \
     bcc \
-    bpftop \
     bpftrace \
-    ccache \
     flatpak-builder \
     git-subtree \
     google-noto-sans-fonts \
     nicstat \
     numactl \
     podman-machine \
-    podman-tui \
-    python3-ramalama \
-    restic \
-    rclone \
     sysprof \
     tiptop \
     usbmuxd \
@@ -44,11 +42,6 @@ dnf5 install --enable-repo="copr:copr.fedorainfracloud.org:ublue-os:packages" -y
 # Adding repositories should be a LAST RESORT. Contributing to Terra or `ublue-os/packages` is much preferred
 # over using random coprs. Please keep this in mind when adding external dependencies.
 # If adding any dependency, make sure to always have it disabled by default and _only_ enable it on `dnf install`
-
-dnf5 config-manager addrepo --from-repofile="https://packages.microsoft.com/yumrepos/vscode/config.repo"
-dnf5 config-manager setopt vscode-yum.enabled=0
-dnf5 install --enable-repo="vscode-yum" -y \
-    code
 
 docker_pkgs=(
     containerd.io
